@@ -4,7 +4,7 @@
 >
 > Primary skill: [`i-have-adhd`](https://github.com/ayghri/i-have-adhd)  
 > License: MIT  
-> Configuration snapshot: 2026-09-02
+> Configuration snapshot: 2026-09-10
 
 ## Tasks captured from the original session
 
@@ -15,12 +15,16 @@
 | 3 | Install the local Lattice Radiant MCP package | Install `radiant_mcp-1.0.0.zip` with Python and register a global stdio MCP server |
 | 4 | List all 42 Radiant tools | See **Radiant MCP tool catalog** |
 | 5 | Determine whether MCP can program hardware | Current server generates bitstreams but does not expose Programmer/JTAG operations |
-| 6 | Fix the recurring Windows “Select an app to open 'python'” dialog | Launch through `py -m radiant_mcp` or a verified real Python executable, not the problematic `python.exe` alias |
-| 7 | Make the Python fix reusable by other AI clients | Use the same MCP command in each client; optional environment variables are documented below |
+| 6 | Fix the recurring Windows “Select an app to open 'python'” dialog | Diagnose every `python` candidate; use `py` or a verified real Python executable instead of a Store alias or extensionless file |
+| 7 | Make the Python fix reusable by other AI clients | Update MCP settings and global AI instructions so generated commands never invoke bare `python` or `python3` |
 | 8 | Create a portable `startup.md` | This document is the resulting environment configuration |
 | 9 | Consolidate every task into the document | Skill, MCP, tools, limitations, and troubleshooting are all included |
 | 10 | Preserve the user's engineering iteration workflow | Keep the baseline read-only, copy per requirement, follow the controlled date naming rule, and record each iteration |
 | 11 | Recover durable engineering preferences from prior sessions | Preserve stage gates, cross-model handoff, reusable source extracts, quantitative analysis, diagrams, and organized outputs |
+| 12 | Enable a high-performance Windows power plan | Create and activate the built-in **High performance** scheme without changing voltage, overclocking, or firmware settings |
+| 13 | Add image-based video production | Install the global `remotion-best-practices` skill so Copilot can author locally rendered videos without external generation credits |
+| 14 | Avoid external video-generation billing | Do not register Glif; it requires a separate OAuth account and consumes Glif credits |
+| 15 | Install a desktop diagram editor | Install the current applicable `JGraph.Draw` package through WinGet and verify the installed version |
 
 ## Instructions for the AI
 
@@ -184,13 +188,24 @@ For research-oriented work, include both classic and recent sources when useful,
 
 ### Make architecture and data flow visible
 
-Use a block diagram when explaining a system, reference design, or team architecture. Show:
+Use draw.io Desktop as the default diagram tool across all tasks. Create a principle block diagram when explaining a system, reference design, architecture, hardware/software partition, or non-trivial control/data flow. Preserve an editable `.drawio` source and export a viewable `.svg` or `.png` beside it. Do not create a diagram when it would add no useful information.
+
+Show:
 
 - major components and their purpose;
 - clocks, resets, and external interfaces;
 - control and data-flow direction;
 - ownership boundaries between the user's work and other team members;
 - shared resources and synchronization constraints.
+
+Use stable filenames such as:
+
+```text
+docs/diagrams/<topic>_architecture.drawio
+docs/diagrams/<topic>_architecture.svg
+```
+
+Keep the exported file synchronized with the editable source after each material diagram change.
 
 ### Organize generated outputs
 
@@ -214,6 +229,7 @@ The following requirements are derived from the user's explicit requests in the 
 6. **Verify the real outcome.** An installation is complete only after a functional check, such as an MCP handshake, tool discovery, version check, build, or targeted test. File existence alone is insufficient.
 7. **Document capabilities and limitations explicitly.** List what a tool can do, what it cannot do, and what extension would be required. Do not imply that bitstream generation also means hardware programming.
 8. **Keep a reproducible migration record.** Record installed components, configuration locations, commands, troubleshooting, validation criteria, and the user's durable requirements in this document.
+9. **Do not assume command resolution is correct.** On Windows, inspect every candidate returned by `Get-Command <name> -All`; a valid interpreter later in `PATH` does not prevent an earlier invalid file from being selected.
 
 When modifying an existing configuration, merge the requested entry and preserve unrelated settings. Before destructive operations or hardware programming, require explicit confirmation.
 
@@ -253,6 +269,105 @@ Copy-Item "$env:TEMP\i-have-adhd\skills\i-have-adhd" "$HOME\.copilot\skills" -Re
 
 Then copy the **Global behavior** section into the global-instructions location used by the new AI.
 
+## Install local video-production guidance
+
+Use `remotion-best-practices` when uploaded images need to be composed into a deterministic video with captions, transitions, narration, music, or local MP4 export. Copilot authors the Remotion project and the computer performs the render.
+
+This workflow uses Copilot for code generation and local CPU/GPU resources for rendering. It does not provide a Copilot-funded text-to-video model. External media-generation services may still require separate accounts and credits.
+
+Install globally with the Skills CLI:
+
+```powershell
+npx --yes skills add remotion-dev/skills `
+  --skill remotion-best-practices `
+  -a github-copilot -g -y
+```
+
+Without Node.js, install from Git:
+
+```powershell
+$temp = Join-Path $env:TEMP "remotion-skills"
+$target = Join-Path $HOME ".copilot\skills\remotion-best-practices"
+
+git clone --depth 1 https://github.com/remotion-dev/skills.git $temp
+New-Item -ItemType Directory -Force (Split-Path -Parent $target) | Out-Null
+Copy-Item "$temp\skills\remotion-best-practices" $target -Recurse
+Remove-Item $temp -Recurse -Force
+```
+
+Verify:
+
+```powershell
+Test-Path "$HOME\.copilot\skills\remotion-best-practices\SKILL.md"
+```
+
+Do not add `https://glif.app/api/mcp` when the requirement is to avoid third-party generation credits. Glif uses OAuth and charges generation against the signed-in Glif account.
+
+## Install draw.io Desktop
+
+Use the official WinGet package:
+
+```powershell
+winget install --id JGraph.Draw --exact --source winget `
+  --accept-package-agreements --accept-source-agreements
+```
+
+Verify:
+
+```powershell
+winget list --id JGraph.Draw --exact --accept-source-agreements
+```
+
+Prefer the latest applicable version because draw.io desktop releases may include Electron and local-file security fixes. If WinGet first installs an older user-scoped portable build and reports that the newer MSI uses different installation technology, replace it only with user approval:
+
+```powershell
+winget uninstall --id JGraph.Draw --exact --source winget
+winget install --id JGraph.Draw --exact --source winget `
+  --accept-package-agreements --accept-source-agreements
+```
+
+The verified source installation was `31.4.4.0`. Treat this as a recorded result, not a permanent version pin; install the current applicable release on a new computer.
+
+After installation, add the **Engineering diagrams** rule to the AI client's global instructions so future tasks use draw.io consistently. The required default is:
+
+```text
+Use draw.io Desktop for principle block diagrams, architecture diagrams,
+hardware/software partition diagrams, and control or data-flow diagrams.
+Preserve the editable .drawio file and export a viewable .svg or .png.
+Do not create a diagram when it adds no useful information.
+```
+
+## Enable the Windows high-performance power plan
+
+This setting prioritizes performance over energy efficiency and may increase fan noise, temperature, and battery drain. It does not modify CPU voltage, overclocking, BIOS, or cooling firmware.
+
+Inspect the current schemes:
+
+```powershell
+powercfg /list
+powercfg /getactivescheme
+```
+
+If **High performance** is absent, duplicate the built-in template and activate the returned GUID:
+
+```powershell
+$output = powercfg /duplicatescheme 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+$guid = [regex]::Match(
+  ($output -join "`n"),
+  "[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}"
+).Value
+
+if (-not $guid) {
+  throw "Could not determine the new power-scheme GUID"
+}
+
+powercfg /changename $guid "High performance"
+powercfg /setactive $guid
+powercfg /getactivescheme
+```
+
+Do not reuse a GUID copied from another computer; Windows creates a new GUID when the scheme is duplicated.
+
 ## Common AI locations
 
 | AI client | Skill location | Always-on instructions |
@@ -277,7 +392,7 @@ lattice-radiant-mcp-server-installer_v1.0\
 └── radiant_mcp-1.0.0.zip
 ```
 
-The MCP package requires Python 3.10 or newer. Use the default Python selected by the Windows `py` launcher instead of hardcoding a minor version.
+The MCP package requires Python 3.10 or newer. Use the default Python selected by the Windows `py` launcher instead of bare `python`. Resolve an absolute executable path only when a client or script cannot reliably launch `py`.
 
 ### Install the Python package
 
@@ -407,15 +522,59 @@ Adding hardware programming requires a separate MCP extension around the install
 
 ## Prevent the Windows Python app-selection dialog
 
-### Cause
+### Observed causes
 
-Some Microsoft Store Python installations expose a `python.exe` application alias. An AI client may open that alias through Windows shell handling and repeatedly display:
+Do not assume this dialog is always caused by the Microsoft Store alias. Check command resolution first. Known causes include:
+
+1. a Microsoft Store `python.exe` application alias;
+2. an extensionless file named `python` earlier in command resolution;
+3. an MCP or generated PowerShell command that still invokes bare `python`;
+4. a long-running process started before the configuration was corrected.
+
+The verified issue on the source computer was a zero-byte extensionless file:
+
+```text
+C:\Windows\System32\python
+```
+
+PowerShell selected that file before the valid Python installations. Windows treated it as a document and repeatedly displayed:
 
 ```text
 Select an app to open 'python'
 ```
 
-### Preferred MCP command
+### Diagnose before changing anything
+
+Run:
+
+```powershell
+Get-Command python, python3, py -All |
+  Select-Object Name, CommandType, Source, Path
+
+$candidate = Get-Command python -ErrorAction SilentlyContinue
+if ($candidate) {
+  Get-Item -LiteralPath $candidate.Source -Force |
+    Format-List FullName, Length, Attributes, CreationTime, LastWriteTime
+}
+
+py -c "import sys; print(sys.executable); print(sys.version)"
+```
+
+A valid `python.exe` appearing later in the list does not make bare `python` safe. The first selected candidate must itself be a real executable.
+
+To find an already-running Copilot command that still contains bare `python`, run:
+
+```powershell
+Get-CimInstance Win32_Process |
+  Where-Object {
+    $_.CommandLine -match '(?i)([&|]\s*python\b|\bpython\s+-[cm])'
+  } |
+  Select-Object ProcessId, ParentProcessId, Name, CommandLine
+```
+
+Before terminating a process, identify its owning session and confirm that stopping it will not interrupt synthesis, programming, measurement, or another destructive operation.
+
+### Preferred commands
 
 Use the Python launcher without fixing a minor version:
 
@@ -423,7 +582,35 @@ Use the Python launcher without fixing a minor version:
 py -m radiant_mcp
 ```
 
-This setup uses whichever compatible Python is the launcher's default. Avoid copying a version-specific path under `C:\Program Files\WindowsApps\...` to another computer.
+For generated PowerShell and Python scripts, use `py` instead of bare `python`:
+
+```powershell
+py -c "import sys; print(sys.executable)"
+Get-Content .\script.py | py -
+```
+
+If a specific long-running workflow needs a stable interpreter, resolve and verify it first:
+
+```powershell
+$python = py -c "import sys; print(sys.executable)"
+if (-not (Test-Path -LiteralPath $python -PathType Leaf)) {
+  throw "Python executable not found: $python"
+}
+& $python -c "import sys; print(sys.executable)"
+```
+
+Use that resolved path in the current workflow. Do not copy a username-specific path or a path under `C:\Program Files\WindowsApps\...` into this portable document.
+
+### Persistent AI-client prevention
+
+Add this rule to the AI client's global instructions:
+
+```text
+On Windows, never invoke bare `python` or `python3`. Use `py`, or resolve and
+verify the real executable with `py -c "import sys; print(sys.executable)"`.
+```
+
+Also inspect all active AI sessions. Correcting the MCP configuration does not rewrite commands that another session already started.
 
 ### Optional environment variables
 
@@ -436,6 +623,18 @@ $python = py -c "import sys; print(sys.executable)"
 ```
 
 Restart the AI client after changing user environment variables. If a client still launches `python`, edit that client's MCP config to use `py` with `-m` and `radiant_mcp`.
+
+### Optional root-cause repair
+
+If diagnosis finds an invalid extensionless file such as `C:\Windows\System32\python`, do not silently delete it. With explicit user approval and administrator rights:
+
+1. verify that its size, owner, timestamp, and signature show that it is not a valid interpreter;
+2. rename it to a unique backup name such as `python.invalid-backup`;
+3. open a new terminal and verify `Get-Command python -All`;
+4. run a known-safe Python version check;
+5. delete the backup only after the user confirms the repair.
+
+If the user does not approve modifying the system directory, leave the file unchanged and enforce `py` or a verified absolute executable in every AI client and script.
 
 ## Start a session with this file
 
@@ -460,6 +659,8 @@ Give me a three-step checklist for verifying a software installation.
 The response should begin with an action, use numbered bounded steps, avoid a preamble and closing pleasantry, and show a concrete final action.
 
 For MCP verification, run `/mcp show` in Copilot or the equivalent command in another AI. Confirm that `lattice-radiant-mcp` is connected and lists 42 tools.
+
+For Python verification, start a new AI session and ask it to run a harmless version check. Confirm from the process command line or output that it used `py` or the verified executable, and that no app-selection dialog appeared. Do not use bare `python` as the verification command when the invalid system file remains in place.
 
 ## Source and update
 
